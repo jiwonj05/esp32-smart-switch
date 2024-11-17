@@ -1,4 +1,4 @@
-const char PAGE_MAIN[] PROGMEM = R"=====( // instead of string literals, we can just use #include "filename"
+const char PAGE_MAIN[] PROGMEM = R"=====( // instead of string literals, we can simplysay #include "filename" in the main file
 <!DOCTYPE html>
 <html lang="en" class="js-focus-visible">
 <head>
@@ -76,27 +76,6 @@ const char PAGE_MAIN[] PROGMEM = R"=====( // instead of string literals, we can 
       font-weight: bold;
       line-height: 50px;
       padding-left: 20px;
-    }
-   .navheading {
-     position: fixed;
-     left: 60%;
-     height: 50px;
-     font-family: "Verdana", "Arial", sans-serif;
-     font-size: 20px;
-     font-weight: bold;
-     line-height: 20px;
-     padding-right: 20px;
-   }
-   .navdata {
-      justify-content: flex-end;
-      position: fixed;
-      left: 70%;
-      height: 50px;
-      font-family: "Verdana", "Arial", sans-serif;
-      font-size: 20px;
-      font-weight: bold;
-      line-height: 20px;
-      padding-right: 20px;
    }
     .category {
       font-family: "Verdana", "Arial", sans-serif;
@@ -112,7 +91,6 @@ const char PAGE_MAIN[] PROGMEM = R"=====( // instead of string literals, we can 
       font-size: 28px;
       text-align: left;
     }
-  
     .btn {
       background-color: #444444;
       border: none;
@@ -188,35 +166,39 @@ const char PAGE_MAIN[] PROGMEM = R"=====( // instead of string literals, we can 
   </div>
   <div id="timeTracking" class="timeTracking">Time Tracking: On for 0 hours 0 minutes 0 seconds</div>
 </main>
-
  <div class="category">Control</div>
-    <button class="btn" onclick="toggleRelay()">Turn On/Off</button>
+    <button id="toggleButton" class="btn" onclick="toggleRelay()">Turn On/Off</button>
     <div id="status" class="status">Status: Not connected</div>
-
-  <footer class="foot" id="temp">ESP32 Controls and Data Updates</footer>
-  
+  <footer class="foot">ESP32 Controls and Data Updates</footer>
   </body>
-
+  // end of styling
+  
   <script type = "text/javascript">
   // Varibales for time tracking
     let applianceOnTime = 0;  // in seconds
     let applianceStatus = "not connected";  // Initial appliance status
-    let applianceTimer;  // Timer to track appliance "on" time
+    let applianceTimer;  // To store the timer reference
 
-    // Toggle relay and update status, time tracking
-  function toggleRelay() {
-    if (applianceStatus === "not connected" || applianceStatus === "off") {
+  // Initialize the page
+    function initialize() {
+      updateStatus();  // Set initial status
+      setInterval(updateStatus, 1000); // Check status every second
+    }
+
+  // Toggle relay and update on/off button, time tracking
+    function toggleRelay() {
+     if (applianceStatus === "not connected" || applianceStatus === "off") {
+      fetch('/relay/on');
       applianceStatus = "on";  // Appliance turns on
       applianceOnTime = 0;  // Reset the timer when turned on
       startTimer();  // Start time tracking
       document.getElementById("toggleButton").innerText = "Turn Off";  // Change button text
     } else if (applianceStatus === "on") {
+      fetch('/relay/off');
       applianceStatus = "off";  // Appliance turns off
       stopTimer();  // Stop time tracking
       document.getElementById("toggleButton").innerText = "Turn On";  // Change button text
     }
-    updateStatus();  // Update the status on the page
-  }
 
     // Start the timer when the appliance is on
     function startTimer() {
@@ -239,27 +221,48 @@ const char PAGE_MAIN[] PROGMEM = R"=====( // instead of string literals, we can 
       document.getElementById("timeTracking").innerText = `Time Tracking: on for ${hours} hours ${minutes} minutes ${seconds} seconds`;
     }
 
-    // Update the appliance status display
-    function updateStatus() {
-  if (applianceStatus === "not connected") {
-    document.getElementById("status").innerHTML = "Status: Not connected";  // Appliance not connected
-    document.getElementById("status").style.color = "#ff0000";  // Red color for not connected
-    document.getElementById("timeTracking").innerHTML = "Time Tracking: on for 0 hours 0 minutes 0 seconds";  // Time tracking reset
-  } else if (applianceStatus === "off") {
-    document.getElementById("status").innerHTML = "Status: Off";  // Appliance is off
-    document.getElementById("timeTracking").innerHTML = "Time Tracking: on for 0 hours 0 minutes 0 seconds";  // Time tracking reset
-  } else if (applianceStatus === "on") {
-    document.getElementById("status").innerHTML = "Status: On";  // Appliance is on
-    document.getElementById("status").style.color = "#00aa00";  // Green color for on
-    updateTimeTracking();  // Update the time tracking display
-  }
+  // update the status 
+  function updateStatus() {
+    fetch("/getStatus")
+    .then(function(response) {
+      return response.text();
+    })
+    .then(function(status) {
+      if (status === "on") {
+        applianceStatus = "on";
+      } else if (status === "off") {
+        applianceStatus = "off";
+      } else {
+        applianceStatus = "not connected";
+      }
+      displayStatus();
+    });
 }
 
-    // Initialize the page
-    function initialize() {
-      updateStatus();  // Set initial status
-    }
+function displayStatus() {
+  var statusText;
+  var statusColor;
 
+  if (applianceStatus === "on") {
+    statusText = "Status: On";
+    statusColor = "#00aa00"; // Green color for "on"
+  } else if (applianceStatus === "off") {
+    statusText = "Status: Off";
+    statusColor = "#ffcc00"; // Yellow color for "off"
+  } else {
+    statusText = "Status: Not connected";
+    statusColor = "#ff0000"; // Red color for "not connected"
+  }
+
+  // Update the text and color on the page
+  document.getElementById("status").innerText = statusText;
+  document.getElementById("status").style.color = statusColor;
+}
+
+// Run the initialize function when the page is loaded
+window.onload = initialize;
+
+/* change to measure power
     function updateVoltage() {
   fetch("/getVoltage")  // HTTP request to fetch voltage
     .then(function(response) { 
@@ -276,6 +279,7 @@ const char PAGE_MAIN[] PROGMEM = R"=====( // instead of string literals, we can 
 
 // Call updateVoltage() to get latest voltage every second
 setInterval(updateVoltage, 1000);
+*/
 </script>
 </body>
 
