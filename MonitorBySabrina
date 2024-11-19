@@ -186,8 +186,8 @@ const char PAGE_MAIN[] PROGMEM = R"=====( // instead of string literals, we can 
     }
 
   // Toggle relay and update on/off button, time tracking
-    function toggleRelay() {
-     if (applianceStatus === "not connected" || applianceStatus === "off") {
+  function toggleRelay() {
+    if (applianceStatus === "not connected" || applianceStatus === "off") {
       fetch('/relay/on');
       applianceStatus = "on";  // Appliance turns on
       applianceOnTime = 0;  // Reset the timer when turned on
@@ -199,6 +199,7 @@ const char PAGE_MAIN[] PROGMEM = R"=====( // instead of string literals, we can 
       stopTimer();  // Stop time tracking
       document.getElementById("toggleButton").innerText = "Turn On";  // Change button text
     }
+  }
 
     // Start the timer when the appliance is on
     function startTimer() {
